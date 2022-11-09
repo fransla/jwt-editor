@@ -279,18 +279,11 @@ public class EditorPresenter extends Presenter {
         // Get the JWS from the editor, change kid, sign with null and set the editor to
         // the new JWS
         JWS jws = getJWS();
-        JOptionPane.showMessageDialog(view.getPanel(), "blah", Utils.getResourceString("error_title_unable_to_sign"),
-        JOptionPane.WARNING_MESSAGE);
-        // Try to perform the attack, show dialog if this fails
+        // Try to perform the attack, revert if this fails
         try {
             jws = Attacks.nullKid(jws);
-            JOptionPane.showMessageDialog(view.getPanel(), "level 2", Utils.getResourceString("error_title_unable_to_sign"),
-            JOptionPane.WARNING_MESSAGE);
-        //} catch (CryptoUtils.SigningException | PEMUtils.PemException | Key.UnsupportedKeyException |e) {
-        } catch (Exception e) {
+        } catch (CryptoUtils.SigningException | PEMUtils.PemException | Key.UnsupportedKeyException e) {
             jws = getJWS();
-            JOptionPane.showMessageDialog(view.getPanel(), e.getMessage(), Utils.getResourceString("error_title_unable_to_sign"),
-                    JOptionPane.WARNING_MESSAGE);
         }
         setJWS(jws);
     }

