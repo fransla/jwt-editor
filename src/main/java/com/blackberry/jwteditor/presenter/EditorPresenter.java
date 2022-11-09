@@ -21,6 +21,8 @@ package com.blackberry.jwteditor.presenter;
 import com.blackberry.jwteditor.operations.Attacks;
 import com.blackberry.jwteditor.operations.Operations;
 import com.blackberry.jwteditor.utils.Utils;
+import com.blackberry.jwteditor.utils.CryptoUtils;
+import com.blackberry.jwteditor.utils.PEMUtils;
 import com.blackberry.jwteditor.model.jose.JOSEObject;
 import com.blackberry.jwteditor.model.jose.JOSEObjectPair;
 import com.blackberry.jwteditor.model.jose.JWE;
@@ -268,6 +270,29 @@ public class EditorPresenter extends Presenter {
      */
     public void onAttackEmbedJWKClicked() {
         signingDialog(SignDialog.Mode.EMBED_JWK);
+    }
+
+    /**
+     * Handle clicks events from the NULL KID Attack button
+     */
+    public void onAttackNullKidClicked() {
+        // Get the JWS from the editor, change kid, sign with null and set the editor to
+        // the new JWS
+        JWS jws = getJWS();
+        JOptionPane.showMessageDialog(view.getPanel(), "blah", Utils.getResourceString("error_title_unable_to_sign"),
+        JOptionPane.WARNING_MESSAGE);
+        // Try to perform the attack, show dialog if this fails
+        try {
+            jws = Attacks.nullKid(jws);
+            JOptionPane.showMessageDialog(view.getPanel(), "level 2", Utils.getResourceString("error_title_unable_to_sign"),
+            JOptionPane.WARNING_MESSAGE);
+        //} catch (CryptoUtils.SigningException | PEMUtils.PemException | Key.UnsupportedKeyException |e) {
+        } catch (Exception e) {
+            jws = getJWS();
+            JOptionPane.showMessageDialog(view.getPanel(), e.getMessage(), Utils.getResourceString("error_title_unable_to_sign"),
+                    JOptionPane.WARNING_MESSAGE);
+        }
+        setJWS(jws);
     }
 
     /**

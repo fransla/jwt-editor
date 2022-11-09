@@ -603,16 +603,19 @@ public class EditorView implements IMessageEditorTab {
         // Create the Attack popup menu
         JPopupMenu popupMenuAttack = new JPopupMenu();
         JMenuItem menuItemAttackEmbedJWK = new JMenuItem(Utils.getResourceString("editor_view_button_attack_embed_jwk"));
+        JMenuItem menuItemAttackNullKID = new JMenuItem(Utils.getResourceString("editor_view_button_attack_null_kid"));
         JMenuItem menuItemAttackSignNone = new JMenuItem(Utils.getResourceString("editor_view_button_attack_sign_none"));
         JMenuItem menuItemAttackKeyConfusion = new JMenuItem(Utils.getResourceString("editor_view_button_attack_key_confusion"));
 
         // Attach the event handlers to the popup menu click events
         menuItemAttackEmbedJWK.addActionListener(e -> presenter.onAttackEmbedJWKClicked());
+        menuItemAttackNullKID.addActionListener(e -> presenter.onAttackNullKidClicked());
         menuItemAttackKeyConfusion.addActionListener(e -> presenter.onAttackKeyConfusionClicked());
         menuItemAttackSignNone.addActionListener(e -> presenter.onAttackSignNoneClicked());
 
         // Add the buttons to the popup menu
         popupMenuAttack.add(menuItemAttackEmbedJWK);
+        popupMenuAttack.add(menuItemAttackNullKID);
         popupMenuAttack.add(menuItemAttackSignNone);
         popupMenuAttack.add(menuItemAttackKeyConfusion);
 
