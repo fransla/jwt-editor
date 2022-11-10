@@ -37,6 +37,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
 
 import javax.swing.*;
+
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -59,7 +61,7 @@ public class EditorPresenter extends Presenter {
     /**
      * Construct a new editor presenter from a view
      *
-     * @param view the view to associate to this presenter
+     * @param view       the view to associate to this presenter
      * @param presenters the shared presenter store
      */
     public EditorPresenter(EditorView view, PresenterStore presenters) {
@@ -71,86 +73,90 @@ public class EditorPresenter extends Presenter {
     }
 
     /**
-     * Determine if the tab should be enabled based on whether a block of text contains JWE/JWSs
+     * Determine if the tab should be enabled based on whether a block of text
+     * contains JWE/JWSs
      *
      * @param content text that may contain a serialized JWE/JWS
      * @return true if the content contains a JWE/JWS that can be edited
      */
-    public boolean isEnabled(String content){
+    public boolean isEnabled(String content) {
         return Utils.extractJOSEObjects(content).size() > 0;
     }
 
     /**
-     * Set the content of the editor tab by extracting and parsing JWE/JWSs from a block of text
+     * Set the content of the editor tab by extracting and parsing JWE/JWSs from a
+     * block of text
      *
      * @param content text that may contain a serialized JWE/JWS
      */
-    public void setMessage(String content){
+    public void setMessage(String content) {
 
         // Save the input text and clear existing JOSE objects
         message = content;
         joseObjectPairs.clear();
 
-        // Extract JOSE Objects from the text, build a change set and add them to the dropdown
+        // Extract JOSE Objects from the text, build a change set and add them to the
+        // dropdown
         List<JOSEObjectPair> joseObjects = Utils.extractJOSEObjects(content);
         String[] joseObjectStrings = new String[joseObjects.size()];
-        for(int i = 0; i < joseObjects.size(); i++){
+        for (int i = 0; i < joseObjects.size(); i++) {
             joseObjectPairs.add(joseObjects.get(i));
 
             // Truncate the JOSE object for display
             String serializedJWT = joseObjects.get(i).getOriginal();
-            if (serializedJWT.length() > EditorView.MAX_JOSE_OBJECT_STRING_LENGTH){
-                serializedJWT = String.format("%d - %s ...", i + 1, serializedJWT.substring(0, EditorView.MAX_JOSE_OBJECT_STRING_LENGTH)); //NON-NLS
+            if (serializedJWT.length() > EditorView.MAX_JOSE_OBJECT_STRING_LENGTH) {
+                serializedJWT = String.format("%d - %s ...", i + 1,
+                        serializedJWT.substring(0, EditorView.MAX_JOSE_OBJECT_STRING_LENGTH)); // NON-NLS
             }
             joseObjectStrings[i] = serializedJWT;
         }
 
         // Instruct the view to display the first JOSE object
         view.setJOSEObjects(joseObjectStrings);
-        if(joseObjects.size() > 0){
+        if (joseObjects.size() > 0) {
             view.setSelected(0);
         }
     }
 
     /**
      * Display a JWS in the editor
+     * 
      * @param jws the JWS to display
      */
-    private void setJWS(JWS jws){
+    private void setJWS(JWS jws) {
 
-        // Check if the header survives pretty printing and compaction without changes (i.e it was compact when deserialized)
+        // Check if the header survives pretty printing and compaction without changes
+        // (i.e it was compact when deserialized)
         String header = jws.getHeader();
         try {
             String prettyPrintedJSON = Utils.prettyPrintJSON(header);
-            if(Utils.compactJSON(prettyPrintedJSON).equals(header)) {
+            if (Utils.compactJSON(prettyPrintedJSON).equals(header)) {
                 // If it does, display the pretty printed version
                 view.setJWSHeaderCompact(true);
                 view.setJWSHeader(prettyPrintedJSON);
-            }
-            else {
-                // Otherwise, it contained whitespace, so don't try to pretty print, as the re-compacted version won't match the original
+            } else {
+                // Otherwise, it contained whitespace, so don't try to pretty print, as the
+                // re-compacted version won't match the original
                 view.setJWSHeaderCompact(false);
                 view.setJWSHeader(header);
             }
-        }
-        catch(JSONException e){
+        } catch (JSONException e) {
             view.setJWSHeader(header);
         }
 
-        // Check if the payload survives pretty printing and compaction without changes (i.e it was compact when deserialized)
+        // Check if the payload survives pretty printing and compaction without changes
+        // (i.e it was compact when deserialized)
         String payload = jws.getPayload();
         try {
             String prettyPrintedJSON = Utils.prettyPrintJSON(payload);
-            if(Utils.compactJSON(prettyPrintedJSON).equals(payload)) {
+            if (Utils.compactJSON(prettyPrintedJSON).equals(payload)) {
                 view.setJWSPayloadCompact(true);
                 view.setPayload(prettyPrintedJSON);
-            }
-            else {
+            } else {
                 view.setJWSPayloadCompact(false);
                 view.setPayload(payload);
             }
-        }
-        catch(JSONException e){
+        } catch (JSONException e) {
             view.setPayload(payload);
         }
 
@@ -160,67 +166,70 @@ public class EditorPresenter extends Presenter {
 
     /**
      * Convert the text/hex entry fields to a JWS
+     * 
      * @return the JWS built from the editor entry fields
      */
     private JWS getJWS() {
         Base64URL header;
         Base64URL payload;
 
-        // Get the header text entry as base64. Compact the JSON if the compact checkbox is ticked
-        // Return the entry encoded as-is if this fails, or the compact checkbox is unticked
+        // Get the header text entry as base64. Compact the JSON if the compact checkbox
+        // is ticked
+        // Return the entry encoded as-is if this fails, or the compact checkbox is
+        // unticked
         try {
             if (view.getJWSHeaderCompact()) {
                 header = Base64URL.encode(Utils.compactJSON(view.getJWSHeader()));
             } else {
                 header = Base64URL.encode(view.getJWSHeader());
             }
-        }
-        catch (JSONException e) {
+        } catch (JSONException e) {
             header = Base64URL.encode(view.getJWSHeader());
         }
 
-        // Get the payload text entry as base64. Compact the JSON if the checkbox is ticked
-        // Return the entry encoded as-is if this fails, or the compact checkbox is unticked
+        // Get the payload text entry as base64. Compact the JSON if the checkbox is
+        // ticked
+        // Return the entry encoded as-is if this fails, or the compact checkbox is
+        // unticked
         try {
             if (view.getJWSPayloadCompact()) {
                 payload = Base64URL.encode(Utils.compactJSON(view.getPayload()));
             } else {
                 payload = Base64URL.encode(view.getPayload());
             }
-        }
-        catch (JSONException e) {
+        } catch (JSONException e) {
             payload = Base64URL.encode(view.getPayload());
         }
 
         return new JWS(
-            header,
-            payload,
-            Base64URL.encode(view.getSignature())
-        );
+                header,
+                payload,
+                Base64URL.encode(view.getSignature()));
     }
 
     /**
      * Display a JWE in the editor
+     * 
      * @param jwe the JWE to display
      */
-    private void setJWE(JWE jwe){
+    private void setJWE(JWE jwe) {
 
-        // Check if the header survives pretty printing and compaction without changes (i.e it was compact when deserialized)
+        // Check if the header survives pretty printing and compaction without changes
+        // (i.e it was compact when deserialized)
         String header = jwe.getHeader();
         try {
             String prettyPrintedJSON = Utils.prettyPrintJSON(header);
-            if(Utils.compactJSON(prettyPrintedJSON).equals(header)) {
+            if (Utils.compactJSON(prettyPrintedJSON).equals(header)) {
                 // If it does, display the pretty printed version
                 view.setJWEHeaderCompact(true);
                 view.setJWEHeader(prettyPrintedJSON);
-            }
-            else {
-                // Otherwise, it contained whitespace, so don't try to pretty print, as the re-compacted version won't match the original
+            } else {
+                // Otherwise, it contained whitespace, so don't try to pretty print, as the
+                // re-compacted version won't match the original
                 view.setJWEHeaderCompact(false);
                 view.setJWEHeader(header);
             }
-        }
-        catch(JSONException e){
+        } catch (JSONException e) {
             view.setJWEHeader(header);
         }
 
@@ -233,6 +242,7 @@ public class EditorPresenter extends Presenter {
 
     /**
      * Convert the text/hex entry fields to a JWE
+     * 
      * @return the JWE built from the editor entry fields
      */
     private JWE getJWE() {
@@ -243,16 +253,17 @@ public class EditorPresenter extends Presenter {
         Base64URL ciphertext = Base64URL.encode(view.getCiphertext());
         Base64URL tag = Base64URL.encode(view.getTag());
 
-        // Get the header text entry as base64. Compact the JSON if the compact checkbox is ticked
-        // Return the entry encoded as-is if this fails, or the compact checkbox is unticked
+        // Get the header text entry as base64. Compact the JSON if the compact checkbox
+        // is ticked
+        // Return the entry encoded as-is if this fails, or the compact checkbox is
+        // unticked
         try {
             if (view.getJWEHeaderCompact()) {
                 header = Base64URL.encode(Utils.compactJSON(view.getJWEHeader()).getBytes(StandardCharsets.UTF_8));
             } else {
                 header = Base64URL.encode(view.getJWEHeader().getBytes(StandardCharsets.UTF_8));
             }
-        }
-        catch (JSONException e){
+        } catch (JSONException e) {
             header = Base64URL.encode(view.getJWEHeader().getBytes(StandardCharsets.UTF_8));
         }
 
@@ -261,8 +272,7 @@ public class EditorPresenter extends Presenter {
                 encryptedKey,
                 iv,
                 ciphertext,
-                tag
-        );
+                tag);
     }
 
     /**
@@ -270,6 +280,54 @@ public class EditorPresenter extends Presenter {
      */
     public void onAttackEmbedJWKClicked() {
         signingDialog(SignDialog.Mode.EMBED_JWK);
+    }
+
+    /**
+     * Handle click events from the HMAC Key Confusion button
+     */
+    public void onAttackKeyConfusionClicked() {
+        KeysPresenter keysPresenter = (KeysPresenter) presenters.get(KeysPresenter.class);
+
+        List<Key> attackKeys = new ArrayList<>();
+
+        // Get a list of verification capable public keys
+        List<Key> verificationKeys = keysPresenter.getVerificationKeys();
+        for (Key signingKey : verificationKeys) {
+            if (signingKey.isPublic() && signingKey.hasPEM()) {
+                attackKeys.add(signingKey);
+            }
+        }
+
+        if (attackKeys.size() == 0) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_signing_keys"),
+                    Utils.getResourceString("error_title_no_signing_keys"), JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Create the key confusion attack dialog with the JWS currently in the editor
+        // fields
+        KeyConfusionAttackDialog keyConfusionAttackDialog = new KeyConfusionAttackDialog(view.getParent(),
+                verificationKeys, getJWS());
+        keyConfusionAttackDialog.pack();
+        keyConfusionAttackDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor(view.getUiComponent()));
+        keyConfusionAttackDialog.setVisible(true);
+        // Blocks here until dialog finishes
+
+        // Set the result as the JWS in the editor if the attack succeeds
+        JWS signedJWS = keyConfusionAttackDialog.getJWS();
+        if (signedJWS != null) {
+            setJWS(signedJWS);
+        }
+    }
+
+    /**
+     * Handle clicks events from the HMAC Key Confusion button
+     */
+    public void onAttackSignNoneClicked() {
+        // Get the JWS from the editor, strip the signature and set the editor to the
+        // new JWS
+        JWS jws = getJWS();
+        setJWS(Attacks.noneSigning(jws));
     }
 
     /**
@@ -289,53 +347,25 @@ public class EditorPresenter extends Presenter {
     }
 
     /**
-     * Handle click events from the HMAC Key Confusion button
+     * Handle clicks events from the Inject JKU Attack button
      */
-    public void onAttackKeyConfusionClicked() {
-        KeysPresenter keysPresenter = (KeysPresenter) presenters.get(KeysPresenter.class);
-
-        List<Key> attackKeys = new ArrayList<>();
-
-        // Get a list of verification capable public keys
-        List<Key> verificationKeys = keysPresenter.getVerificationKeys();
-        for(Key signingKey: verificationKeys) {
-            if(signingKey.isPublic() && signingKey.hasPEM()){
-                attackKeys.add(signingKey);
-            }
-        }
-
-        if(attackKeys.size() == 0) {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_signing_keys"), Utils.getResourceString("error_title_no_signing_keys"), JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Create the key confusion attack dialog with the JWS currently in the editor fields
-        KeyConfusionAttackDialog keyConfusionAttackDialog = new KeyConfusionAttackDialog(view.getParent(), verificationKeys, getJWS());
-        keyConfusionAttackDialog.pack();
-        keyConfusionAttackDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor(view.getUiComponent()));
-        keyConfusionAttackDialog.setVisible(true);
-        // Blocks here until dialog finishes
-
-        // Set the result as the JWS in the editor if the attack succeeds
-        JWS signedJWS = keyConfusionAttackDialog.getJWS();
-        if(signedJWS != null) {
-            setJWS(signedJWS);
-        }
-    }
-
-    /**
-     * Handle clicks events from the HMAC Key Confusion button
-     */
-    public void onAttackSignNoneClicked() {
-        // Get the JWS from the editor, strip the signature and set the editor to the new JWS
+    public void onAttackInjectJKUClicked() {
+        // Get the JWS from the editor, inject jku, sign and set the editor to the new JWS
         JWS jws = getJWS();
-        setJWS(Attacks.noneSigning(jws));
+        // Try to perform the attack, revert if this fails
+        try {
+            jws = Attacks.injectJku(jws, "https://qic8vk5cqahcotn27ax4upk39ufl3cr1.aurainfosec-test.com");
+        } catch (CryptoUtils.SigningException | PEMUtils.PemException | Key.UnsupportedKeyException | URISyntaxException e) {
+            JWS jws2 = getJWS();
+            jws = jws2;
+        }
+        setJWS(jws);
     }
 
     /**
      * Handle click events from the Sign button
      */
-    public void onSignClicked(){
+    public void onSignClicked() {
         signingDialog(SignDialog.Mode.NORMAL);
     }
 
@@ -344,12 +374,13 @@ public class EditorPresenter extends Presenter {
      *
      * @param mode mode of the signing dialog to display
      */
-    private void signingDialog(SignDialog.Mode mode){
+    private void signingDialog(SignDialog.Mode mode) {
         KeysPresenter keysPresenter = (KeysPresenter) presenters.get(KeysPresenter.class);
 
         // Check there are signing keys in the keystore
-        if(keysPresenter.getSigningKeys().size() == 0) {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_signing_keys"), Utils.getResourceString("error_title_no_signing_keys"), JOptionPane.WARNING_MESSAGE);
+        if (keysPresenter.getSigningKeys().size() == 0) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_signing_keys"),
+                    Utils.getResourceString("error_title_no_signing_keys"), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -362,7 +393,7 @@ public class EditorPresenter extends Presenter {
 
         // If a JWS was created by the dialog, replace the contents of the editor
         JWS signedJWS = signDialog.getJWS();
-        if(signedJWS != null) {
+        if (signedJWS != null) {
             setJWS(signedJWS);
         }
     }
@@ -374,30 +405,34 @@ public class EditorPresenter extends Presenter {
         KeysPresenter keysPresenter = (KeysPresenter) presenters.get(KeysPresenter.class);
 
         // Check there are verification keys in the keystore
-        if(keysPresenter.getVerificationKeys().size() == 0) {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_verification_keys"), Utils.getResourceString("error_title_no_verification_keys"), JOptionPane.WARNING_MESSAGE);
+        if (keysPresenter.getVerificationKeys().size() == 0) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_verification_keys"),
+                    Utils.getResourceString("error_title_no_verification_keys"), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Try to verify the contents of the editor with all signing keys available, display a message with the result
-        if(Operations.verify(getJWS(), keysPresenter.getVerificationKeys())){
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("editor_view_message_verified"), Utils.getResourceString("editor_view_message_title_verification"), JOptionPane.WARNING_MESSAGE);
+        // Try to verify the contents of the editor with all signing keys available,
+        // display a message with the result
+        if (Operations.verify(getJWS(), keysPresenter.getVerificationKeys())) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("editor_view_message_verified"),
+                    Utils.getResourceString("editor_view_message_title_verification"), JOptionPane.WARNING_MESSAGE);
 
-        }
-        else {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("editor_view_message_not_verified"), Utils.getResourceString("editor_view_message_title_verification"), JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("editor_view_message_not_verified"),
+                    Utils.getResourceString("editor_view_message_title_verification"), JOptionPane.WARNING_MESSAGE);
         }
     }
 
     /**
      * Handle click events from the Encrypt button
      */
-    public void onEncryptClicked(){
+    public void onEncryptClicked() {
         KeysPresenter keysPresenter = (KeysPresenter) presenters.get(KeysPresenter.class);
 
         // Check there are encryption keys in the keystore
-        if(keysPresenter.getEncryptionKeys().size() == 0) {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_encryption_keys"), Utils.getResourceString("error_title_no_encryption_keys"), JOptionPane.WARNING_MESSAGE);
+        if (keysPresenter.getEncryptionKeys().size() == 0) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_encryption_keys"),
+                    Utils.getResourceString("error_title_no_encryption_keys"), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -408,9 +443,10 @@ public class EditorPresenter extends Presenter {
         encryptDialog.setVisible(true);
         // Block here until dialog completes
 
-        // If a JWE was created by the dialog, replace the contents of the editor and change to JWE mode
+        // If a JWE was created by the dialog, replace the contents of the editor and
+        // change to JWE mode
         JWE jwe = encryptDialog.getJWE();
-        if(jwe != null){
+        if (jwe != null) {
             view.setJWEMode();
             setJWE(jwe);
         }
@@ -420,12 +456,13 @@ public class EditorPresenter extends Presenter {
     /**
      * Handle click events from the Decrypt button
      */
-    public void onDecryptClicked(){
+    public void onDecryptClicked() {
         KeysPresenter keysPresenter = (KeysPresenter) presenters.get(KeysPresenter.class);
 
         // Check there are decryption keys in the keystore
-        if(keysPresenter.getDecryptionKeys().size() == 0) {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_decryption_keys"), Utils.getResourceString("error_title_no_decryption_keys"), JOptionPane.WARNING_MESSAGE);
+        if (keysPresenter.getDecryptionKeys().size() == 0) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_no_decryption_keys"),
+                    Utils.getResourceString("error_title_no_decryption_keys"), JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -434,16 +471,18 @@ public class EditorPresenter extends Presenter {
         try {
             jws = Operations.decrypt(getJWE(), keysPresenter.getDecryptionKeys());
         } catch (ParseException e) {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_decryption_invalid_header"), Utils.getResourceString("error_title_unable_to_decrypt"), JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_decryption_invalid_header"),
+                    Utils.getResourceString("error_title_unable_to_decrypt"), JOptionPane.WARNING_MESSAGE);
         }
 
-        // If decryption was successful, set the contents of the editor to the decrypted JWS and set the editor mode to JWS
-        if(jws != null){
+        // If decryption was successful, set the contents of the editor to the decrypted
+        // JWS and set the editor mode to JWS
+        if (jws != null) {
             view.setJWSMode();
             setJWS(jws);
-        }
-        else {
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_decryption_all_keys_failed"), Utils.getResourceString("error_title_unable_to_decrypt"), JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_decryption_all_keys_failed"),
+                    Utils.getResourceString("error_title_unable_to_decrypt"), JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -460,13 +499,14 @@ public class EditorPresenter extends Presenter {
      * @return the altered message
      */
     public String getMessage() {
-        // Create two lists, one containing the original, the other containing the modified version at the same index
+        // Create two lists, one containing the original, the other containing the
+        // modified version at the same index
         List<String> searchList = new ArrayList<>();
         List<String> replacementList = new ArrayList<>();
 
-        //Add a replacement pair to the lists if the JOSEObjectPair has changed
-        for(JOSEObjectPair joseObjectPair: joseObjectPairs){
-            if(joseObjectPair.changed()) {
+        // Add a replacement pair to the lists if the JOSEObjectPair has changed
+        for (JOSEObjectPair joseObjectPair : joseObjectPairs) {
+            if (joseObjectPair.changed()) {
                 searchList.add(joseObjectPair.getOriginal());
                 replacementList.add(joseObjectPair.getModified().serialize());
             }
@@ -488,8 +528,8 @@ public class EditorPresenter extends Presenter {
      * @return true if changes have been made in the editor
      */
     public boolean isModified() {
-        for(JOSEObjectPair joseObjectPair: joseObjectPairs){
-            if(joseObjectPair.changed()){
+        for (JOSEObjectPair joseObjectPair : joseObjectPairs) {
+            if (joseObjectPair.changed()) {
                 return true;
             }
         }
@@ -500,7 +540,8 @@ public class EditorPresenter extends Presenter {
      * Callback called by the view whenever the dropdown selection is changed
      */
     public void onSelectionChanged() {
-        // Set a selectionChanging to true, so componentChanged doesn't treat the change as a user event
+        // Set a selectionChanging to true, so componentChanged doesn't treat the change
+        // as a user event
         selectionChanging = true;
 
         // Get the JOSEObject pair corresponding to the selected dropdown entry index
@@ -508,11 +549,10 @@ public class EditorPresenter extends Presenter {
         JOSEObject joseObject = joseObjectPair.getModified();
 
         // Change to JWE/JWS mode based on the newly selected JOSEObject
-        if(joseObject instanceof JWS){
+        if (joseObject instanceof JWS) {
             view.setJWSMode();
             setJWS((JWS) joseObject);
-        }
-        else {
+        } else {
             view.setJWEMode();
             setJWE((JWE) joseObject);
         }
@@ -522,17 +562,20 @@ public class EditorPresenter extends Presenter {
     }
 
     /**
-     * Callback called by the view whenever the contents of a text or hex editor changes, or the compact checkbox is modified
+     * Callback called by the view whenever the contents of a text or hex editor
+     * changes, or the compact checkbox is modified
      */
     public void componentChanged() {
         // Get the currently selected object
         JOSEObjectPair joseObjectPair = joseObjectPairs.get(view.getSelected());
 
-        //Serialize the text/hex entries to a JWS/JWE in compact form, depending on the editor mode
+        // Serialize the text/hex entries to a JWS/JWE in compact form, depending on the
+        // editor mode
         JOSEObject joseObject = view.getMode() == EditorView.TAB_JWS ? getJWS() : getJWE();
-        //Update the JOSEObjectPair with the change
+        // Update the JOSEObjectPair with the change
         joseObjectPair.setModified(joseObject);
-        //Highlight the serialized text as changed if it differs from the original, and the change wasn't triggered by onSelectionChanging
+        // Highlight the serialized text as changed if it differs from the original, and
+        // the change wasn't triggered by onSelectionChanging
         view.setSerialized(joseObject.serialize(), joseObjectPair.changed() && !selectionChanging);
     }
 
@@ -542,9 +585,9 @@ public class EditorPresenter extends Presenter {
     public void formatJWEHeader() {
         try {
             view.setJWEHeader(Utils.prettyPrintJSON(view.getJWEHeader()));
-        }
-        catch (JSONException e){
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_format_json"), Utils.getResourceString("error_title_unable_to_format_json"), JOptionPane.ERROR_MESSAGE);
+        } catch (JSONException e) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_format_json"),
+                    Utils.getResourceString("error_title_unable_to_format_json"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -554,9 +597,9 @@ public class EditorPresenter extends Presenter {
     public void formatJWSHeader() {
         try {
             view.setJWSHeader(Utils.prettyPrintJSON(view.getJWSHeader()));
-        }
-        catch (JSONException e){
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_format_json"), Utils.getResourceString("error_title_unable_to_format_json"), JOptionPane.ERROR_MESSAGE);
+        } catch (JSONException e) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_format_json"),
+                    Utils.getResourceString("error_title_unable_to_format_json"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -566,9 +609,9 @@ public class EditorPresenter extends Presenter {
     public void formatJWSPayload() {
         try {
             view.setPayload(Utils.prettyPrintJSON(view.getPayload()));
-        }
-        catch (JSONException e){
-            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_format_json"), Utils.getResourceString("error_title_unable_to_format_json"), JOptionPane.ERROR_MESSAGE);
+        } catch (JSONException e) {
+            JOptionPane.showMessageDialog(view.getPanel(), Utils.getResourceString("error_format_json"),
+                    Utils.getResourceString("error_title_unable_to_format_json"), JOptionPane.ERROR_MESSAGE);
         }
     }
 }

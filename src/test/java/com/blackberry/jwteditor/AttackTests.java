@@ -30,13 +30,16 @@ import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.OctetSequenceKeyGenerator;
 import org.junit.jupiter.api.Test;
 
+import java.net.URISyntaxException;
 import java.text.ParseException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class AttackTests {
 
-    // Using values from https://www.nccgroup.com/ae/about-us/newsroom-and-events/blogs/2019/january/jwt-attack-walk-through/ to verify
+    // Using values from
+    // https://www.nccgroup.com/ae/about-us/newsroom-and-events/blogs/2019/january/jwt-attack-walk-through/
+    // to verify
     private static String HMAC_KEY_CONFUSION_JWS = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9kZW1vLnNqb2VyZGxhbmdrZW1wZXIubmxcLyIsImlhdCI6MTU0NzcyOTY2MiwiZXhwIjoxNTQ3Nzk5OTk5LCJkYXRhIjp7Ik5DQyI6InRlc3QifX0.";
     private static String HMAC_KEY_CONFUSION_EXPECTED_JWS = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9kZW1vLnNqb2VyZGxhbmdrZW1wZXIubmxcLyIsImlhdCI6MTU0NzcyOTY2MiwiZXhwIjoxNTQ3Nzk5OTk5LCJkYXRhIjp7Ik5DQyI6InRlc3QifX0.2zobdg7sgeApcEaR9ngMTRZT1dkWiMJOWYkelzQu5Z8";
     private static String HMAC_KEY_CONFUSION_PEM = "-----BEGIN PUBLIC KEY-----\n" +
@@ -51,10 +54,10 @@ public class AttackTests {
 
     private static String EMBEDDED_JWK_KEY = "{\"p\":\"6g4o__Z8GnI2UtRz6AJdD0dVRmZqq1bONXWq6ee70eVHmu-fZ2XQCYj6miF1DT-QHDA1eb7QxKnb5b-HZ2L-OXf6OLtu6xNBmQjT1ZcGHe8YHmNfJN4CP-nxG4EYJRoInZOvQwBEWfXIrqvw0HhGXTrfC8GGHtb1uCP733cITaU\",\"kty\":\"RSA\",\"q\":\"tvQO0f6XevKrWzHDfjfQ_dQohOIpRYMIuiEohAMqphgeVh3VUJHAnigWkHllvJN6wsJcZM9TfXiKFjdEtgl_L9igTJ8BTAJD2yLl_qfnjpODLR7A--AnyFEEFtgO-FfnFRQlBC50-Bfz4JxF5K7hXAYs1X5GHp0j6SyjO7wSaFU\",\"d\":\"SWgkfMybZJ6zFZgVpgLMgjTHWfvrC4MRvtjmif2haSiYHQRB0IgY5_kSUKvp00reb4Xa_Asx1gjq6lrfd8iIt_OSJNkS7Od3s_K6pP_o7WAtl3UUuMqSdZSmJXiPzlkCBldnjsHRU1kqolfiT07m9zCS972ZTilYoErVk9eOCcazPvEihUcyDGTcx2H7cXrZaqrlliQNUpTCWw6SHspq2V4FLGZrioFDCOkbAL1rgD5mg2mANMLv1UY7JWVueuvzs8jnvsGnhRQlnhf7QgSFXUUfhoy-Ej2rWrfYZ5_i17tuGkjqiq0vzAA1U28REZEBHjDQ4p_8vCtHgz3Lc-75UQ\",\"e\":\"AQAB\",\"kid\":\"dfc6a9df-916c-406d-84de-ce5b49d50ad0\",\"qi\":\"Pl4ANTrzCLGsE5IE3jkJiqeOq6Z3HXrQsv39NXQNriLAyghQPgrcnN4rGLaBRi1DKFElU4qmCLXzwaylox-vJd_W4WD-2UFvaSD4h_EUjGSfpcfEPTONECF5WTRHwDCNRVu7XaK53jp0nadsiFaa8a1SmP58uZwl869Bp0Hskks\",\"dp\":\"lLJSUeuihJqy8ISQ7oEx5hcHkiZW9mu7rjMHVnsm0_66MzCxMNt6A9TGgU1oM_aB86adEq-rqoXPcnLv7zrxEEms6oYJvccKEdON4VCFTlcsF4JCXAW_oCNcToEBefDEMHg3DHYK9qwzxuTtpUQEUA6qzakxMD6Y9VfHGP1ihRE\",\"dq\":\"nnRItbXUCsdMhEJYd-Pt3Tm4EkcyyaKQl2yKg7OeZ5ZyB9H048Ao3JIJ4P1TkP0GkNH3ZdRvEjepGU6q8yLMhmsPgu0gGW3IyW2zV1ii48h9D0IYkM32hrcsXICqjorLeGUnHjUCV7GfJoUSv9p7EtHCWPHx1yfwZ06i3eSo6LU\",\"n\":\"p0U0MdHFLPovX5j91oH-dc54oeJDIDapuPDM9gYHjhX2Bwj4fFhqvaAfIhn-w7zm-6HZsH-VxPCngl7GkWxx1F7Cobkg8TOD4UusFFo8srSFDExWCQ4MRFDRcLN9bmfXeiR-MvGE1tHZNJCOnxsx32-ueF0T2xo880-073skum8sS9vi7RuNhaCY_liJNkrznqQCEbNLR_-V_-IQaFG_obDNqEHroKC3lxz34s4CPpUwen8IFJm8_vbcFiI_jZrw_VTwJM4Il5Hr2uJLv_ahsZTLomumJmabvXulgQFBK4hEd-FH4c72glbFfFLEkzRQz-ozCzySudbRG9UvhubPyQ\"}";
     private static String EMBEDDED_JWK_EXPECTED_JWS = "eyJraWQiOiJkZmM2YTlkZi05MTZjLTQwNmQtODRkZS1jZTViNDlkNTBhZDAiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp3ayI6eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsImtpZCI6ImRmYzZhOWRmLTkxNmMtNDA2ZC04NGRlLWNlNWI0OWQ1MGFkMCIsIm4iOiJwMFUwTWRIRkxQb3ZYNWo5MW9ILWRjNTRvZUpESURhcHVQRE05Z1lIamhYMkJ3ajRmRmhxdmFBZklobi13N3ptLTZIWnNILVZ4UENuZ2w3R2tXeHgxRjdDb2JrZzhUT0Q0VXVzRkZvOHNyU0ZERXhXQ1E0TVJGRFJjTE45Ym1mWGVpUi1NdkdFMXRIWk5KQ09ueHN4MzItdWVGMFQyeG84ODAtMDczc2t1bThzUzl2aTdSdU5oYUNZX2xpSk5rcnpucVFDRWJOTFJfLVZfLUlRYUZHX29iRE5xRUhyb0tDM2x4ejM0czRDUHBVd2VuOElGSm04X3ZiY0ZpSV9qWnJ3X1ZUd0pNNElsNUhyMnVKTHZfYWhzWlRMb211bUptYWJ2WHVsZ1FGQks0aEVkLUZINGM3MmdsYkZmRkxFa3pSUXotb3pDenlTdWRiUkc5VXZodWJQeVEifX0.eyJpc3MiOiJodHRwOlwvXC9kZW1vLnNqb2VyZGxhbmdrZW1wZXIubmxcLyIsImlhdCI6MTU0NzcyOTY2MiwiZXhwIjoxNTQ3Nzk5OTk5LCJkYXRhIjp7Ik5DQyI6InRlc3QifX0.Fte7ISfZ15DGtYwql8Ej1rou0Kf5Lut3qpxUS2zcp5UsRapQTyU5nehvVZD5BKq_xKRkG0SEVlRbF6Z2FAsG7Al3NXKc257xKc1djt_toh7nsDZPWycfj91FrLVJW5dN06PNgDjkCVlcdM2x_awesc3bApLg7bmcEkxsMoPqUjDBLxo6h-AHEo_7F-0R7mOAC5cSUCsCosEnnwMG7ihC_bPkD9cGUwq5UEPjzVCToavIXXWjNRpHXSob9aGuKUlYao92VoYIuOH51YcyAspzXD3lDViG8ZxOPVTf3T7ZDUmfy161XDRyvmRxeUVSRSUzAt3-WdMjmP8YRylYCC36Ew";
- 
+
     private static String NULL_KID_JWS = "eyJraWQiOiIzMGQ5YWViNS1hZWVlLTQ4ZjktYTc3MC00NzgwOGI1NGQ5MWMiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJwb3J0c3dpZ2dlciIsInN1YiI6IndpZW5lciIsImV4cCI6MTY2ODAyOTYxOX0.TlSZkDXyggdLvy3HahfM3B-Mz_nfoJ4cU5_CiCQEm2U";
     private static String NULL_KID_EXPECTED_JWS = "eyJraWQiOiIuLlwvLi5cLy4uXC8uLlwvLi5cL2RldlwvbnVsbCIsInR5cCI6IkpXVCIsImFsZyI6IkhTMjU2In0.eyJpc3MiOiJwb3J0c3dpZ2dlciIsInN1YiI6ImFkbWluaXN0cmF0b3IiLCJleHAiOjE2NjgwMjk2MTl9._L0dhib_C5ttZgzrSC-sU9IWszQVra4meRhSEVeUoMI";
-    
+
     @Test
     void testSigningKeyNone() throws ParseException {
         JWS jws = JWS.parse(HMAC_KEY_CONFUSION_JWS);
@@ -63,10 +66,11 @@ public class AttackTests {
         assertEquals(modifiedJWS.getHeader(), "{\"typ\":\"JWT\",\"alg\":\"none\"}");
         assertEquals(modifiedJWS.getEncodedPayload().toString(), HMAC_KEY_CONFUSION_JWS.split("\\.")[1]);
         assertEquals(modifiedJWS.getSignature().length, 0);
-    }   
-    
+    }
+
     @Test
-    void testNullKid() throws ParseException, PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException {
+    void testNullKid()
+            throws ParseException, PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException {
         JWS jws = JWS.parse(NULL_KID_JWS);
         JWS expectedJWS = JWS.parse(NULL_KID_EXPECTED_JWS);
         JWS modifiedJWS = Attacks.nullKid(jws);
@@ -76,19 +80,29 @@ public class AttackTests {
     }
 
     @Test
-    void testHMACKeyConfusion() throws ParseException, PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException {
+    void testInjectJku()
+            throws ParseException, PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException, URISyntaxException {
+                JWS jws = JWS.parse(NULL_KID_JWS);        
+                JWS modifiedJWS = Attacks.injectJku(jws, "https://heeeE");       
+        assert (false);
+    }
+
+    @Test
+    void testHMACKeyConfusion()
+            throws ParseException, PEMUtils.PemException, Key.UnsupportedKeyException, CryptoUtils.SigningException {
         JWS jws = JWS.parse(HMAC_KEY_CONFUSION_JWS);
         JWS expectedJWS = JWS.parse(HMAC_KEY_CONFUSION_EXPECTED_JWS);
         JWKKey key = new JWKKey(PEMUtils.pemToRSAKey(HMAC_KEY_CONFUSION_PEM));
 
-        JWS modifiedJWS  = Attacks.hmacKeyConfusion(jws, key, JWSAlgorithm.HS256, false);
+        JWS modifiedJWS = Attacks.hmacKeyConfusion(jws, key, JWSAlgorithm.HS256, false);
 
         assertArrayEquals(modifiedJWS.getSignature(), expectedJWS.getSignature());
     }
 
     @Test
     // Test the Embedded JWK attack produces a known-good value
-    void testEmbeddedJWKKnown() throws ParseException, Key.UnsupportedKeyException, CryptoUtils.SigningException, NoSuchFieldException, IllegalAccessException {
+    void testEmbeddedJWKKnown() throws ParseException, Key.UnsupportedKeyException, CryptoUtils.SigningException,
+            NoSuchFieldException, IllegalAccessException {
         JWS jws = JWS.parse(HMAC_KEY_CONFUSION_JWS);
         JWKKey jwk = new JWKKey(JWK.parse(EMBEDDED_JWK_KEY));
 
@@ -97,10 +111,10 @@ public class AttackTests {
         assertEquals(modifiedJWS.serialize(), EMBEDDED_JWK_EXPECTED_JWS);
     }
 
-
     @Test
     // Test the Embedded JWK attack with all signing key types
-    void testEmbeddedJWKAll() throws ParseException, Key.UnsupportedKeyException, CryptoUtils.SigningException, JOSEException, PEMUtils.PemException, NoSuchFieldException, IllegalAccessException {
+    void testEmbeddedJWKAll() throws ParseException, Key.UnsupportedKeyException, CryptoUtils.SigningException,
+            JOSEException, PEMUtils.PemException, NoSuchFieldException, IllegalAccessException {
         JWS jws = JWS.parse(HMAC_KEY_CONFUSION_JWS);
 
         for (String pem : PEMToJWKTests.RSAPrivate) {
@@ -127,7 +141,7 @@ public class AttackTests {
             }
         }
 
-        OctetSequenceKey[] octetSequenceKeys = new OctetSequenceKey[]{
+        OctetSequenceKey[] octetSequenceKeys = new OctetSequenceKey[] {
                 new OctetSequenceKeyGenerator(128).generate(),
                 new OctetSequenceKeyGenerator(192).generate(),
                 new OctetSequenceKeyGenerator(256).generate(),
@@ -136,7 +150,7 @@ public class AttackTests {
                 new OctetSequenceKey.Builder("secret123".getBytes()).build(),
         };
 
-        for(OctetSequenceKey octetSequenceKey: octetSequenceKeys) {
+        for (OctetSequenceKey octetSequenceKey : octetSequenceKeys) {
             JWKKey jwk = new JWKKey(octetSequenceKey);
             for (JWSAlgorithm alg : jwk.getSigningAlgorithms()) {
                 Attacks.embeddedJWK(jws, jwk, alg);
