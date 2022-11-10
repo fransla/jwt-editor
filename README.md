@@ -70,6 +70,7 @@ The `Attack` option implements three well-known attacks against JSON Web Signatu
 * Embedded JWK
 * 'none' Signing Algorithm
 * HMAC Key Confusion
+* '/dev/null' KID
 
 These are described in more detail below.
 
@@ -163,6 +164,10 @@ The tool implements this attack using the steps outlined at https://www.nccgroup
 ## Embedded JWK
 
 JWS defines a 'jwk' field within the Header which is used for the ECDH-ES algorithms as a method of transporting the public key to the recipient. However, this field has been mistakenly used by library implementations as a source of the key for signature verification. By creating a new key, embedding the key for verification within the header, and then signing the JWS Payload, an attacker is able to produce arbitrary JWT payloads.
+
+## '/dev/null' KID
+
+JWS defines a `kid` field within the Header which is used to determine which key was used for signing in cases where multiple keys are available. If this field is also vulnerable to a path traversal attack, an attacker can potentially use an arbitray file on the server as the signing key; in this implementation of the attack, the `kid` is set to `../../../../../dev/null`, and the JWS is then signed with a null key.
 
 # CLI Mode
 
