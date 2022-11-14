@@ -354,7 +354,7 @@ public class EditorPresenter extends Presenter {
         JWS jws = getJWS();
         // Try to perform the attack, revert if this fails
         try {
-            jws = Attacks.injectJku(jws, "https://qic8vk5cqahcotn27ax4upk39ufl3cr1.aurainfosec-test.com");
+            jws = Attacks.injectJku(jws, "https://collaboratorURLhere");
         } catch (CryptoUtils.SigningException | PEMUtils.PemException | Key.UnsupportedKeyException | URISyntaxException e) {
             JWS jws2 = getJWS();
             jws = jws2;
